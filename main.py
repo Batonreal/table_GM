@@ -9,7 +9,7 @@ num_time_slots = 20  # Количество пар моментов времен
 
 # Генерация случайных требований на включение генераторов в каждый момент времени
 # time_requirements = np.random.randint(0, num_generators + 1, size=num_time_slots).tolist()
-time_requirements = [6, 15, 16, 14, 10, 6, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+time_requirements = [3, 4, 16, 14, 10, 6, 0, 3, 1, 1, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
 
 # Проверка, что количество требований соответствует количеству временных слотов
 assert len(time_requirements) == num_time_slots, "Количество требований должно совпадать с количеством временных слотов"
@@ -21,6 +21,7 @@ table = np.full((num_generators, num_time_slots * 2), "", dtype=object)
 generator_usage = [0] * num_generators
 
 # Алгоритм распределения включений
+
 for t in range(num_time_slots):
     # Сортируем генераторы по количеству их включений
     sorted_generators = sorted(range(num_generators), key=lambda x: (generator_usage[x], x))
@@ -51,8 +52,17 @@ df["Total +"] = (df == "+").sum(axis=1)
 # Добавление пустого столбца для удобства чтения
 df[" "] = ""  # Пустой столбец
 
+# Добавление строки с количеством включенных генераторов под таблицей
+time_requirements_row = []
+for i in range(num_time_slots):
+    time_requirements_row.extend([time_requirements[i], ""])  # Значение под "+" и пустое под "-"
+
+# Дополнение строки пустыми значениями для остальных столбцов
+time_requirements_row += [""] * (len(df.columns) - len(time_requirements_row))
+df.loc["Total Generators On"] = time_requirements_row
+
 # Сохранение таблицы в Excel
-output_file = "generator_schedule.xlsx"
+output_file = "generator_schedule2.xlsx"
 df.to_excel(output_file, index=True)
 
 # Открытие файла Excel для изменения стилей
@@ -63,11 +73,17 @@ ws = wb.active
 green_fill = PatternFill(start_color="C6EFCE", end_color="C6EFCE", fill_type="solid")
 
 # Применение стиля к ячейкам с "+" и "-"
-for row in ws.iter_rows(min_row=2, max_row=ws.max_row, min_col=2, max_col=ws.max_column - 2):
+for row in ws.iter_rows(min_row=2, max_row=ws.max_row - 1, min_col=2, max_col=ws.max_column - 2):
     for cell in row:
         if cell.value == "+" or cell.value == "-":
             cell.fill = green_fill
 
+# Применение жирного шрифта к строке с итогами
+from openpyxl.styles import Font
+bold_font = Font(bold=True)
+for cell in ws[ws.max_row]:
+    cell.font = bold_font
+
 # Сохранение изменений в Excel
 wb.save(output_file)
-print(f"Таблица сохранена в файл {output_file} с окрашенными ячейками.")
+print(f"Таблица сохранена в файл {output_file} с окрашенными ячейками и итогами.")
